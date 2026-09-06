@@ -1,13 +1,17 @@
 {
   "name": "ensosp-guide",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.0.0",
   "type": "module",
+  "description": "Guide de poche AP COND — plateau technique ENSOSP (PWA hors-ligne)",
+  "engines": {
+    "node": ">=20.19"
+  },
   "scripts": {
     "dev": "vite",
     "build": "vite build",
     "lint": "oxlint",
-    "preview": "vite preview"
+    "preview": "vite preview --port 4173"
   },
   "dependencies": {
     "lucide-react": "^1.41.0",
@@ -20,8 +24,12 @@
     "@vitejs/plugin-react": "^6.1.0",
     "autoprefixer": "^10.5.5",
     "oxlint": "^1.79.0",
-    "tailwindcss": "^4.3.3",
+    "postcss": "^8.5.28",
+    "tailwindcss": "^3.4.19",
     "vite": "^8.2.2",
     "vite-plugin-pwa": "^1.3.0"
+  },
+  "overrides": {
+    "glob": "^13.0.6"
   }
 }
