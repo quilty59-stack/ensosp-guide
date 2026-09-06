@@ -4,6 +4,10 @@ export default {
   content: ['./index.html', './src/**/*.{js,jsx}'],
   theme: {
     extend: {
+      screens: {
+        // Les plus petits téléphones du parc : 360 px de large.
+        xs: '400px',
+      },
       fontFamily: {
         sans: [
           'system-ui',

@@ -49,7 +49,11 @@ export default defineConfig({
       workbox: {
         // L'application est entièrement statique : tout le shell part en précache,
         // ce qui la rend consultable sans réseau sur le plateau.
-        globPatterns: ['**/*.{js,css,html,svg,png,ico,woff2}'],
+        globPatterns: ['**/*.{js,css,html,svg,png,jpg,jpeg,ico,woff2}'],
+        // Les planches du guide (~4 Mo) partent en précache : sur le plateau,
+        // le réseau est incertain et les repérages doivent rester consultables.
+        // Le PDF source en est exclu : il reste téléchargeable en ligne.
+        maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
         cleanupOutdatedCaches: true,
         clientsClaim: true,
         // /emulator est une route cliente : elle doit répondre hors ligne aussi.

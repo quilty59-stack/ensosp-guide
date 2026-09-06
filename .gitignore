@@ -22,3 +22,6 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Images originales extraites du PDF (régénérables) et pièces nominatives
+originaux/

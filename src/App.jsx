@@ -1,23 +1,45 @@
 import { useCallback, useEffect, useState } from 'react'
-import { WifiOff } from 'lucide-react'
-import Navigation, { TABS } from './components/Navigation.jsx'
-import HomePage from './components/HomePage.jsx'
-import FicheTaches from './components/FicheTaches.jsx'
-import Sites from './components/Sites.jsx'
-import Radio from './components/Radio.jsx'
-import Organigramme from './components/Organigramme.jsx'
-import Accident from './components/Accident.jsx'
-import NEXIS from './components/NEXIS.jsx'
+import BottomNav from './components/BottomNav.jsx'
+import HamburgerMenu from './components/HamburgerMenu.jsx'
+import Header from './components/Header.jsx'
+import SplashScreen, { marquerSplashVu, splashDejaVu } from './components/SplashScreen.jsx'
+import { PAGE_PAR_ID } from './navigation.js'
 import EmulatePage from './dev/EmulatePage.jsx'
 
-const PAGES = {
-  accueil: HomePage,
+import Accident from './components/pages/Accident.jsx'
+import Accueil from './components/pages/Accueil.jsx'
+import AVP from './components/pages/AVP.jsx'
+import Contacts from './components/pages/Contacts.jsx'
+import Dotation from './components/pages/Dotation.jsx'
+import FicheTaches from './components/pages/FicheTaches.jsx'
+import Horaires from './components/pages/Horaires.jsx'
+import Immeuble from './components/pages/Immeuble.jsx'
+import NEXIS from './components/pages/NEXIS.jsx'
+import Organigramme from './components/pages/Organigramme.jsx'
+import Pavillon from './components/pages/Pavillon.jsx'
+import Plan from './components/pages/Plan.jsx'
+import PME from './components/pages/PME.jsx'
+import Radio from './components/pages/Radio.jsx'
+import Saphire from './components/pages/Saphire.jsx'
+import ZoneUrbaine from './components/pages/ZoneUrbaine.jsx'
+
+const ECRANS = {
+  accueil: Accueil,
   taches: FicheTaches,
-  sites: Sites,
+  horaires: Horaires,
+  dotation: Dotation,
   radio: Radio,
+  pavillon: Pavillon,
+  immeuble: Immeuble,
+  'zone-urbaine': ZoneUrbaine,
+  pme: PME,
+  saphire: Saphire,
+  avp: AVP,
+  plan: Plan,
   organigramme: Organigramme,
   accident: Accident,
   nexis: NEXIS,
+  contacts: Contacts,
 }
 
 const THEME_KEY = 'apcond:theme'
@@ -32,20 +54,16 @@ export const EMBEDDED =
 /**
  * Trois écritures mènent à l'émulateur :
  *   /emulator          route propre (serveur avec repli SPA : Vite, Vercel)
- *   #/emulator         repli sans configuration serveur (ouverture de fichier,
- *                      hébergement statique nu, service worker d'un autre projet)
+ *   #/emulator         repli sans configuration serveur
  *   ?view=emulator     pratique pour un lien collé dans un message
  */
 function readRoute() {
-  // L'émulateur ne s'ouvre jamais dans l'émulateur : pas de récursion.
-  if (EMBEDDED) return 'app'
+  if (EMBEDDED) return 'app' // l'émulateur ne s'ouvre jamais dans l'émulateur
   const { pathname, hash } = window.location
   const chemin = pathname.replace(/\/+$/, '')
   const ancre = hash.replace(/^#\/?/, '')
   if (chemin === '/emulator' || ancre === 'emulator') return 'emulator'
-  if (new URLSearchParams(window.location.search).get('view') === 'emulator') {
-    return 'emulator'
-  }
+  if (PARAMS.get('view') === 'emulator') return 'emulator'
   return 'app'
 }
 
@@ -56,17 +74,27 @@ function readStoredTheme() {
     const stored = localStorage.getItem(THEME_KEY)
     if (stored === 'dark' || stored === 'light') return stored
   } catch {
-    /* stockage indisponible (navigation privée) : on retombe sur le système */
+    /* stockage indisponible (navigation privée) : on suit le système */
   }
-  return window.matchMedia('(prefers-color-scheme: dark)').matches
-    ? 'dark'
-    : 'light'
+  return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
+}
+
+/**
+ * La rubrique vit dans l'ancre (#/radio) : le bouton retour d'Android revient
+ * à l'écran précédent au lieu de fermer l'application, un lien s'échange, et
+ * un rechargement rouvre la même page.
+ */
+function readTabFromHash() {
+  const ancre = window.location.hash.replace(/^#\/?/, '')
+  return ancre in ECRANS ? ancre : null
 }
 
 function readStoredTab() {
+  const fromHash = readTabFromHash()
+  if (fromHash) return fromHash
   try {
     const stored = localStorage.getItem(TAB_KEY)
-    if (stored && stored in PAGES) return stored
+    if (stored && stored in ECRANS) return stored
   } catch {
     /* idem */
   }
@@ -85,18 +113,21 @@ export default function App() {
   const [tab, setTab] = useState(readStoredTab)
   const [route, setRoute] = useState(readRoute)
   const [online, setOnline] = useState(() => navigator.onLine)
+  const [menuOuvert, setMenuOuvert] = useState(false)
+  // Le premier lancement met le guide en cache : l'écran de démarrage occupe
+  // ce temps. Les lancements suivants ouvrent directement la dernière rubrique.
+  const [splash, setSplash] = useState(() => !EMBEDDED && !splashDejaVu())
 
-  // Applique le thème au document et accorde la couleur de la barre système.
   useEffect(() => {
     const root = document.documentElement
     root.classList.toggle('dark', theme === 'dark')
     document
       .querySelector('meta[name="theme-color"]')
-      ?.setAttribute('content', theme === 'dark' ? '#020617' : '#dc2626')
+      ?.setAttribute('content', theme === 'dark' ? '#0f172a' : '#dc2626')
     try {
       localStorage.setItem(THEME_KEY, theme)
     } catch {
-      /* rien à faire : le thème reste valable pour la session */
+      /* le thème reste valable pour la session */
     }
   }, [theme])
 
@@ -107,6 +138,9 @@ export default function App() {
       localStorage.setItem(TAB_KEY, tab)
     } catch {
       /* ignoré */
+    }
+    if (!EMBEDDED && readTabFromHash() !== tab && readRoute() === 'app') {
+      window.history.replaceState(null, '', `#/${tab}`)
     }
     window.scrollTo({ top: 0, behavior: 'instant' })
   }, [tab])
@@ -121,9 +155,12 @@ export default function App() {
     }
   }, [])
 
-  // Bouton précédent du navigateur / d'Android.
   useEffect(() => {
-    const onPop = () => setRoute(readRoute())
+    const onPop = () => {
+      setRoute(readRoute())
+      const depuisAncre = readTabFromHash()
+      if (depuisAncre) setTab(depuisAncre)
+    }
     window.addEventListener('popstate', onPop)
     window.addEventListener('hashchange', onPop)
     return () => {
@@ -155,17 +192,25 @@ export default function App() {
     return () => window.removeEventListener('message', onMessage)
   }, [])
 
-  const navigate = useCallback((id) => setTab(id), [])
+  const naviguer = useCallback((id) => {
+    setTab(id)
+    setMenuOuvert(false)
+    if (window.location.hash !== `#/${id}`) {
+      window.location.hash = `#/${id}`
+    }
+  }, [])
+
   const toggleTheme = useCallback(
     () => setTheme((t) => (t === 'dark' ? 'light' : 'dark')),
     [],
   )
-  const openEmulator = useCallback(() => {
-    window.history.pushState({ fromApp: true }, '', '/emulator')
-    setRoute('emulator')
+
+  const fermerSplash = useCallback(() => {
+    marquerSplashVu()
+    setSplash(false)
   }, [])
+
   const closeEmulator = useCallback(() => {
-    // Revenir en arrière plutôt qu'empiler quand on vient du guide.
     if (window.history.state?.fromApp) {
       window.history.back()
       return
@@ -176,53 +221,43 @@ export default function App() {
 
   if (route === 'emulator') {
     return (
-      <EmulatePage
-        onBack={closeEmulator}
-        theme={theme}
-        onToggleTheme={toggleTheme}
-      />
+      <EmulatePage onBack={closeEmulator} theme={theme} onToggleTheme={toggleTheme} />
     )
   }
 
-  const meta = TABS.find((t) => t.id === tab) ?? TABS[0]
-  const Page = PAGES[tab] ?? HomePage
+  if (splash) return <SplashScreen onTermine={fermerSplash} />
+
+  const Ecran = ECRANS[tab] ?? Accueil
+  const meta = PAGE_PAR_ID[tab]
 
   return (
     <div className="min-h-dvh">
-      <header className="sticky top-0 z-30 border-b border-slate-200 bg-white/90 backdrop-blur-md dark:border-slate-800 dark:bg-slate-950/90">
-        <div className="safe-top mx-auto flex max-w-2xl items-center gap-3 px-4 py-3">
-          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-red-600 text-sm font-black text-white shadow-sm">
-            AP
-          </span>
-          <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-bold leading-tight">
-              Guide AP COND — ENSOSP
-            </p>
-            <p className="truncate text-xs text-slate-500 dark:text-slate-400">
-              {meta.title}
-            </p>
-          </div>
-          {!online && (
-            <span className="flex items-center gap-1 rounded-full bg-amber-100 px-2 py-1 text-[11px] font-semibold text-amber-700 dark:bg-amber-950/60 dark:text-amber-400">
-              <WifiOff className="h-3.5 w-3.5" aria-hidden="true" />
-              Hors ligne
-            </span>
-          )}
-        </div>
-      </header>
-
-      <main className="mx-auto max-w-2xl px-4 pb-28 pt-5">
-        <Page
-          onNavigate={navigate}
-          onOpenEmulator={EMBEDDED ? null : openEmulator}
-        />
-      </main>
-
-      <Navigation
-        current={tab}
-        onChange={navigate}
+      <Header
         theme={theme}
         onToggleTheme={toggleTheme}
+        onOuvrirMenu={() => setMenuOuvert(true)}
+        onAccueil={() => naviguer('accueil')}
+        horsLigne={!online}
+      />
+
+      {/* 60 px de bandeau, 70 px de barre du bas, plus les encoches. */}
+      <main className="mx-auto max-w-2xl px-4 pb-[calc(70px+var(--safe-bottom)+24px)] pt-[calc(60px+var(--safe-top)+20px)]">
+        <Ecran onNaviguer={naviguer} />
+
+        {meta && (
+          <p className="mt-8 text-center text-xs text-slate-400 dark:text-slate-500">
+            Guide AP COND — page {meta.page} du document source
+          </p>
+        )}
+      </main>
+
+      <BottomNav courant={tab} onNaviguer={naviguer} />
+
+      <HamburgerMenu
+        ouvert={menuOuvert}
+        courant={tab}
+        onFermer={() => setMenuOuvert(false)}
+        onNaviguer={naviguer}
       />
     </div>
   )

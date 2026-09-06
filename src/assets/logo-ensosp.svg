@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Guide AP COND">
+  <title>Guide AP COND</title>
+  <!-- Volant de conduite : couronne, moyeu et trois branches. -->
+  <circle cx="32" cy="32" r="26" fill="none" stroke="#DC2626" stroke-width="6" />
+  <path
+    d="M32 32 L11 32 M32 32 L53 32 M32 32 L32 58"
+    stroke="#DC2626"
+    stroke-width="6"
+    stroke-linecap="round"
+  />
+  <circle cx="32" cy="32" r="12" fill="#DC2626" />
+  <!-- Flamme au moyeu, détourée pour rester lisible à 48 px. -->
+  <path
+    d="M32 20.5c4.2 4.4 6.3 8 6.3 10.9 0 1.9-.6 3.5-1.8 4.8.2-1.6-.3-3-1.6-4.3.1 3.5-1 6-3.2 7.6l-.6.4c-3.4-1.4-5.1-4-5.1-7.6 0-4 2-8 6-11.8z"
+    fill="#FFFFFF"
+  />
+</svg>

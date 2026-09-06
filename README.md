@@ -1,8 +1,10 @@
 # Guide AP COND — ENSOSP
 
-PWA d'aide-mémoire pour l'adjoint pédagogique conduite du plateau technique
-ENSOSP. Installable sur mobile et **entièrement consultable hors connexion**
-(tout le shell est précaché par le service worker).
+Dématérialisation du **Guide AP COND** — assistant pédagogique conducteur du
+plateau technique ENSOSP de Vitrolles. Les 16 rubriques du guide papier, sur
+mobile, **entièrement consultables hors connexion** : le service worker
+précache l'application et ses 38 planches (~4,3 Mo), le réseau n'étant pas
+garanti sur le plateau.
 
 ## Démarrage
 
@@ -32,28 +34,36 @@ vercel --prod # production
 ```
 vite.config.js             plugin React + VitePWA (manifest, workbox)
 tailwind.config.js         darkMode: 'class', contenu scanné
-postcss.config.js          tailwindcss + autoprefixer
 vercel.json                framework, build et en-têtes de cache
 index.html                 métadonnées PWA + application du thème avant rendu
+public/
+  guide_apcond.pdf         document source (41 pages), téléchargeable depuis Contacts
+  images/                  38 planches extraites du PDF (JPEG, ~3,9 Mo)
 src/
-  main.jsx
-  index.css                directives Tailwind + utilitaires safe-area
-  App.jsx                  thème, navigation 7 pages, bandeau hors ligne
+  navigation.js            les 16 rubriques (ordre du sommaire) + barre du bas
+  data/
+    guide.js               contenu rédactionnel du guide, page par page
+    nexis.js               365 natures de fait (annexe, pages 32 à 40)
+  ui.jsx                   briques partagées (Card, Collapsible, Callout, Photo…)
+  assets/logo-ensosp.svg   marque de l'application : volant et flamme
+  App.jsx                  thème, routage par ancre, écran de démarrage
   components/
-    Navigation.jsx         barre fixe 7 onglets + bascule clair/sombre + TABS
-    ui.jsx                 briques partagées (Card, Collapsible, Callout…)
-    HomePage.jsx           7 cartes d'accès + zone bleue de 5 infos rapides
-    FicheTaches.jsx        horaires + 27 tâches (10 lundi / 6 quotidien / 11 vendredi)
-    Sites.jsx              Pavillon D2, Immeuble C3, Zone urbaine E3
-    Radio.jsx              6 CS sur TGK 269, TGK 278 et 218, maintenance TPH 700
-    Organigramme.jsx       contacts urgents + 5 sections dépliantes
-    Accident.jsx           arbre de décision 7 étapes, OUI vert / NON rouge
-    NEXIS.jsx              51 motifs, 9 catégories, recherche et filtres
-    Emulator.jsx           cadre iPhone / iPad / Android (encoche, barre d'état,
-                           safe area, barre de geste, feuille de partage iOS)
-    EmulatePage.jsx        page /emulator : sélecteurs d'appareil, orientation,
-                           app ou navigateur, bouton Installer, URL servie
+    Header.jsx             bandeau fixe 60 px : logo, thème, menu
+    BottomNav.jsx          barre fixe 70 px : 4 raccourcis + accueil surélevé
+    HamburgerMenu.jsx      panneau des 16 rubriques (70 % de l'écran)
+    SplashScreen.jsx       écran de démarrage, premier lancement seulement
+    Logo.jsx
+    pages/                 les 16 écrans
+      Accueil, FicheTaches, Horaires, Dotation, Radio,
+      FicheSite + Pavillon / Immeuble / ZoneUrbaine / PME / Saphire,
+      AVP, Plan, Organigramme, Accident, NEXIS, Contacts
+  dev/
+    Emulator.jsx           cadre iPhone / iPad / Android
+    EmulatePage.jsx        page /emulator
 ```
+
+Chaque rubrique porte en pied de page le numéro de page du document source,
+pour retrouver le passage dans le guide papier.
 
 ## Émulateur intégré
 
@@ -61,8 +71,8 @@ src/
 npm run dev   # puis http://localhost:5173/emulator
 ```
 
-Accessible aussi depuis le lien « Tester en émulateur » en bas de l'accueil, et
-par deux écritures de repli qui n'exigent aucune configuration serveur :
+Accessible aussi par deux écritures de repli qui n'exigent aucune
+configuration serveur :
 `http://localhost:5173/#/emulator` et `http://localhost:5173/?view=emulator`.
 
 Le repli par `#` sert quand la page est servie par un hébergement statique sans
@@ -86,23 +96,42 @@ l'installation réelle.
 
 ## Mettre à jour le contenu
 
-Chaque écran expose ses données en constantes en tête de fichier, sans base ni
-API : `INFOS_RAPIDES` (HomePage), `HORAIRES` et `SECTIONS` (FicheTaches),
-`SITES` (Sites), `CANAUX_CS` et `CANAUX_SPECIALISES` (Radio), `SECTIONS` et
-`URGENCES` (Organigramme), `ETAPES` (Accident), `CATEGORIES` et `MOTIFS` (NEXIS).
+Tout le contenu vit dans `src/data/`, sans base ni API :
 
-**À compléter / valider avant diffusion** : noms des personnels et postes
-téléphoniques de l'organigramme (champs `nom` et `tel` — un `tel` rempli devient
-un appel direct), attribution définitive des canaux par le service
-transmissions, et correspondance des motifs NEXIS avec le règlement
-opérationnel départemental.
+- `guide.js` — rôle de l'AP, fiche de tâches, horaires des MSP, planification,
+  dotation, procédures radio, sites de manœuvre, scénarios AVP, organigramme,
+  conduite à tenir, contacts, légende du plan, coordonnées de l'École.
+- `nexis.js` — les 365 natures de fait, avec pour chacune son libellé court,
+  son libellé autoportant, son label et sa page.
 
-Numéros déjà intégrés : secours 18 / 112, urgence interne **333**, astreinte
-plateau **06 71 23 95 52**, standard ENSOSP **04 42 39 06 66**, SAMU 15,
-police 17. Magasin : **magasin-central@ensosp.fr** (lien direct depuis la tâche
-d'inventaire du vendredi).
+Le tableau NEXIS a été extrait du PDF par géométrie : les séparateurs de lignes
+et de colonnes du document délimitent chaque cellule, ce qui garantit que les
+trois colonnes restent appariées. Quelques cellules du document source portent
+un chiffre en guise de libellé court, et trois entrées ont un label vide : ces
+valeurs sont conservées telles quelles.
+
+**Non repris volontairement**
+
+- La **feuille de garde** hebdomadaire (planche de la page 10) : elle nomme les
+  encadrants, apprenants et manœuvrants de la semaine. Publier ces données
+  personnelles sur une URL ouverte n'aurait pas été acceptable, et elle change
+  chaque semaine. La page « MSP & horaires » décrit son rôle sans la reproduire.
+- Le **logo institutionnel de l'ENSOSP** : l'application n'est pas un document
+  validé par l'École. Elle porte sa propre marque (`src/assets/logo-ensosp.svg`).
+
+Les originaux pleine résolution extraits du PDF sont conservés hors dépôt dans
+`originaux/` (ignoré par git) ; ils se régénèrent depuis `public/guide_apcond.pdf`.
+
+**À faire valider par le plateau technique avant diffusion** : l'organigramme
+(15 personnes, page 30), l'attribution des canaux radio par le service
+transmissions, et les numéros d'astreinte.
 
 ## Données locales
 
-Trois clés `localStorage`, propres à l'appareil : `apcond:theme` (thème),
-`apcond:tab` (dernière rubrique consultée), `apcond:taches` (checklist).
+Quatre clés `localStorage`, propres à l'appareil : `apcond:theme` (thème),
+`apcond:tab` (dernière rubrique consultée), `apcond:taches` (checklist de la
+fiche de tâches), `apcond:splash` (écran de démarrage déjà vu).
+
+La rubrique courante vit aussi dans l'ancre de l'URL (`#/radio`) : le bouton
+retour d'Android revient à l'écran précédent au lieu de fermer l'application,
+et un lien s'échange tel quel.

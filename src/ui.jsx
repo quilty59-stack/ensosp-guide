@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { ChevronDown } from 'lucide-react'
+import { ChevronDown, ImageOff } from 'lucide-react'
 
 /**
  * Briques d'interface partagées par les 7 écrans.
@@ -171,5 +171,37 @@ export function Callout({ icon: Icon, accent = 'amber', title, children }) {
         </div>
       </div>
     </div>
+  )
+}
+
+/**
+ * Photo du guide. Les images extraites du PDF vivent dans public/images/ ;
+ * si l'une manque, on affiche un cadre neutre plutôt qu'une image cassée.
+ */
+export function Photo({ src, alt, legende, ratio = 'aspect-[16/10]', className = '' }) {
+  const [erreur, setErreur] = useState(false)
+  return (
+    <figure className={`overflow-hidden rounded-xl bg-slate-100 dark:bg-slate-800 ${className}`}>
+      {erreur ? (
+        <div className={`flex ${ratio} w-full flex-col items-center justify-center gap-2 text-slate-400`}>
+          <ImageOff className="h-6 w-6" aria-hidden="true" />
+          <span className="px-4 text-center text-xs">{alt}</span>
+        </div>
+      ) : (
+        <img
+          src={src}
+          alt={alt}
+          loading="lazy"
+          decoding="async"
+          onError={() => setErreur(true)}
+          className={`${ratio} w-full object-cover`}
+        />
+      )}
+      {legende && (
+        <figcaption className="px-3 py-2 text-xs text-slate-600 dark:text-slate-400">
+          {legende}
+        </figcaption>
+      )}
+    </figure>
   )
 }
