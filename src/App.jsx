@@ -3,12 +3,14 @@ import BottomNav from './components/BottomNav.jsx'
 import HamburgerMenu from './components/HamburgerMenu.jsx'
 import Header from './components/Header.jsx'
 import SplashScreen, { marquerSplashVu, splashDejaVu } from './components/SplashScreen.jsx'
-import { PAGE_PAR_ID } from './navigation.js'
+import { PAGE_PAR_ID_COMPLET, PARENT } from './navigation.js'
+import { SCENARIOS } from './data/guide.js'
 import EmulatePage from './dev/EmulatePage.jsx'
 
 import Accident from './components/pages/Accident.jsx'
 import Accueil from './components/pages/Accueil.jsx'
 import AVP from './components/pages/AVP.jsx'
+import AVPDetail from './components/pages/AVPDetail.jsx'
 import Contacts from './components/pages/Contacts.jsx'
 import Dotation from './components/pages/Dotation.jsx'
 import FicheTaches from './components/pages/FicheTaches.jsx'
@@ -21,6 +23,7 @@ import Plan from './components/pages/Plan.jsx'
 import PME from './components/pages/PME.jsx'
 import Radio from './components/pages/Radio.jsx'
 import Saphire from './components/pages/Saphire.jsx'
+import SitesPage from './components/pages/SitesPage.jsx'
 import ZoneUrbaine from './components/pages/ZoneUrbaine.jsx'
 
 const ECRANS = {
@@ -29,6 +32,7 @@ const ECRANS = {
   horaires: Horaires,
   dotation: Dotation,
   radio: Radio,
+  sites: SitesPage,
   pavillon: Pavillon,
   immeuble: Immeuble,
   'zone-urbaine': ZoneUrbaine,
@@ -40,6 +44,58 @@ const ECRANS = {
   accident: Accident,
   nexis: NEXIS,
   contacts: Contacts,
+  // Les sept fiches de scénario partagent un même écran, distingué par son id.
+  ...Object.fromEntries(
+    SCENARIOS.map((s) => [s.id, () => <AVPDetail id={s.id} />]),
+  ),
+}
+
+/**
+ * Pile de navigation : le dernier élément est l'écran affiché, les précédents
+ * sont les écrans où le bouton « Retour » ramène.
+ *
+ * Une fiche ouverte depuis le menu insère sa liste dans la pile : depuis le
+ * détail du Pavillon, « Retour » ramène aux sites de manœuvre, que l'on soit
+ * passé par la liste ou non.
+ */
+function empiler(pile, id) {
+  const courant = pile[pile.length - 1]
+  if (id === courant) return pile
+  if (id === 'accueil') return ['accueil']
+
+  const dejaLa = pile.indexOf(id)
+  if (dejaLa !== -1) return pile.slice(0, dejaLa + 1)
+
+  const parent = PARENT[id]
+  if (parent) {
+    const base = pile.includes(parent)
+      ? pile.slice(0, pile.indexOf(parent) + 1)
+      // On écarte les fiches sœurs : la pile garde un seul chemin.
+      : empiler(pile.filter((p) => PARENT[p] !== parent), parent)
+    return [...base, id]
+  }
+  return [...pile, id]
+}
+
+/** Pile d'ouverture : la rubrique visée, précédée de l'accueil et de sa liste. */
+function pileInitiale(id) {
+  return id === 'accueil' ? ['accueil'] : empiler(['accueil'], id)
+}
+
+/**
+ * Donne à l'historique du navigateur une entrée par écran de la pile.
+ *
+ * Nécessaire quand on entre par un lien pointant droit sur une fiche
+ * (#/immeuble) : sans ces entrées, le retour quitterait l'application au lieu
+ * de remonter à la liste des sites. C'est la reconstruction de pile que font
+ * les applications natives sur un lien profond.
+ */
+function materialiser(pile) {
+  window.history.replaceState({ pile: pile.slice(0, 1) }, '', `#/${pile[0]}`)
+  for (let i = 1; i < pile.length; i += 1) {
+    const etape = pile.slice(0, i + 1)
+    window.history.pushState({ pile: etape }, '', `#/${etape[i]}`)
+  }
 }
 
 const THEME_KEY = 'apcond:theme'
@@ -110,13 +166,17 @@ function applySafeArea(top, bottom) {
 
 export default function App() {
   const [theme, setTheme] = useState(readStoredTheme)
-  const [tab, setTab] = useState(readStoredTab)
+  const [pile, setPile] = useState(() => pileInitiale(readStoredTab()))
   const [route, setRoute] = useState(readRoute)
   const [online, setOnline] = useState(() => navigator.onLine)
   const [menuOuvert, setMenuOuvert] = useState(false)
   // Le premier lancement met le guide en cache : l'écran de démarrage occupe
   // ce temps. Les lancements suivants ouvrent directement la dernière rubrique.
   const [splash, setSplash] = useState(() => !EMBEDDED && !splashDejaVu())
+
+  // L'écran affiché est le sommet de la pile ; ce qui précède est le chemin
+  // de retour.
+  const tab = pile[pile.length - 1]
 
   useEffect(() => {
     const root = document.documentElement
@@ -139,11 +199,18 @@ export default function App() {
     } catch {
       /* ignoré */
     }
-    if (!EMBEDDED && readTabFromHash() !== tab && readRoute() === 'app') {
-      window.history.replaceState(null, '', `#/${tab}`)
-    }
     window.scrollTo({ top: 0, behavior: 'instant' })
   }, [tab])
+
+  // L'entrée d'historique du premier affichage porte elle aussi sa pile,
+  // sinon un retour depuis la deuxième page ne saurait où revenir.
+  useEffect(() => {
+    if (EMBEDDED || readRoute() !== 'app') return
+    materialiser(pile)
+    // Volontairement au montage seulement : les navigations suivantes
+    // empilent leur propre entrée.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   useEffect(() => {
     const update = () => setOnline(navigator.onLine)
@@ -156,10 +223,20 @@ export default function App() {
   }, [])
 
   useEffect(() => {
-    const onPop = () => {
+    const onPop = (evenement) => {
       setRoute(readRoute())
+      const enregistree = evenement?.state?.pile
+      if (Array.isArray(enregistree) && enregistree.length > 0) {
+        setPile(enregistree)
+        return
+      }
+      // Entrée d'historique sans pile : ancre saisie à la main, ou lien reçu.
       const depuisAncre = readTabFromHash()
-      if (depuisAncre) setTab(depuisAncre)
+      if (depuisAncre) {
+        const reconstruite = pileInitiale(depuisAncre)
+        setPile(reconstruite)
+        materialiser(reconstruite)
+      }
     }
     window.addEventListener('popstate', onPop)
     window.addEventListener('hashchange', onPop)
@@ -192,13 +269,32 @@ export default function App() {
     return () => window.removeEventListener('message', onMessage)
   }, [])
 
-  const naviguer = useCallback((id) => {
-    setTab(id)
-    setMenuOuvert(false)
-    if (window.location.hash !== `#/${id}`) {
-      window.location.hash = `#/${id}`
-    }
-  }, [])
+  const naviguer = useCallback(
+    (id) => {
+      setMenuOuvert(false)
+      const suivante = empiler(pile, id)
+      if (suivante === pile) return
+
+      // Ouvrir une fiche depuis le menu insère sa liste dans la pile : cette
+      // liste reçoit sa propre entrée d'historique, sans quoi le retour
+      // l'enjamberait pour revenir deux écrans en arrière.
+      const ajoutPur =
+        suivante.length > pile.length && pile.every((p, i) => p === suivante[i])
+      const etapes = ajoutPur
+        ? suivante.slice(pile.length).map((_, i) => suivante.slice(0, pile.length + i + 1))
+        : [suivante]
+
+      for (const etape of etapes) {
+        window.history.pushState({ pile: etape }, '', `#/${etape[etape.length - 1]}`)
+      }
+      setPile(suivante)
+    },
+    [pile],
+  )
+
+  // Le retour de l'app passe par l'historique : le geste de retour du système
+  // et ce bouton restent ainsi indiscernables.
+  const retour = useCallback(() => window.history.back(), [])
 
   const toggleTheme = useCallback(
     () => setTheme((t) => (t === 'dark' ? 'light' : 'dark')),
@@ -228,7 +324,7 @@ export default function App() {
   if (splash) return <SplashScreen onTermine={fermerSplash} />
 
   const Ecran = ECRANS[tab] ?? Accueil
-  const meta = PAGE_PAR_ID[tab]
+  const meta = PAGE_PAR_ID_COMPLET[tab]
 
   return (
     <div className="min-h-dvh">
@@ -237,6 +333,7 @@ export default function App() {
         onToggleTheme={toggleTheme}
         onOuvrirMenu={() => setMenuOuvert(true)}
         onAccueil={() => naviguer('accueil')}
+        onRetour={pile.length > 1 ? retour : null}
         horsLigne={!online}
       />
 

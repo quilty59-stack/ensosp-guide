@@ -1,5 +1,5 @@
-import FicheSite from './FicheSite.jsx'
+import SiteDetail from './SiteDetail.jsx'
 
 export default function ZoneUrbaine() {
-  return <FicheSite id="zone-urbaine" />
+  return <SiteDetail id="zone-urbaine" />
 }

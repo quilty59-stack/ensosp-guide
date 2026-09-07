@@ -1,5 +1,5 @@
-import FicheSite from './FicheSite.jsx'
+import SiteDetail from './SiteDetail.jsx'
 
 export default function Saphire() {
-  return <FicheSite id="saphire" />
+  return <SiteDetail id="saphire" />
 }

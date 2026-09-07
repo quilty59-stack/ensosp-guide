@@ -65,7 +65,7 @@ export default function HamburgerMenu({ ouvert, courant, onFermer, onNaviguer })
 
         <nav className="safe-bottom flex-1 overflow-y-auto overscroll-contain p-2">
           <ul className="space-y-0.5">
-            {PAGES.map(({ id, titre, icone: Icone, repere, page }) => {
+            {PAGES.map(({ id, titre, icone: Icone, repere, page, parent }) => {
               const actif = id === courant
               return (
                 <li key={id}>
@@ -73,7 +73,9 @@ export default function HamburgerMenu({ ouvert, courant, onFermer, onNaviguer })
                     type="button"
                     onClick={() => onNaviguer(id)}
                     aria-current={actif ? 'page' : undefined}
-                    className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left transition-colors ${
+                    className={`flex w-full items-center gap-3 rounded-xl py-2.5 pr-3 text-left transition-colors ${
+                      parent ? 'pl-7' : 'pl-3'
+                    } ${
                       actif
                         ? 'bg-red-50 text-red-700 dark:bg-red-950/50 dark:text-red-300'
                         : 'hover:bg-slate-100 active:bg-slate-200 dark:hover:bg-slate-800 dark:active:bg-slate-700'

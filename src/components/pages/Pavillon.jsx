@@ -1,5 +1,5 @@
-import FicheSite from './FicheSite.jsx'
+import SiteDetail from './SiteDetail.jsx'
 
 export default function Pavillon() {
-  return <FicheSite id="pavillon" />
+  return <SiteDetail id="pavillon" />
 }

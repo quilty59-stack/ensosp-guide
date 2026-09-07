@@ -1,5 +1,5 @@
-import FicheSite from './FicheSite.jsx'
+import SiteDetail from './SiteDetail.jsx'
 
 export default function PME() {
-  return <FicheSite id="pme" />
+  return <SiteDetail id="pme" />
 }

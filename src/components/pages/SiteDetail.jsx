@@ -7,7 +7,7 @@ import { Callout, Card, PageHeader, Photo } from '../../ui.jsx'
  * points particuliers et vues du bâtiment (photo, repérage, vue 3D).
  * Les cinq sites du guide partagent cette mise en page.
  */
-export default function FicheSite({ id }) {
+export default function SiteDetail({ id }) {
   const site = SITES.find((s) => s.id === id)
   if (!site) return null
 

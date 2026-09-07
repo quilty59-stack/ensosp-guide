@@ -40,7 +40,8 @@ public/
   guide_apcond.pdf         document source (41 pages), téléchargeable depuis Contacts
   images/                  38 planches extraites du PDF (JPEG, ~3,9 Mo)
 src/
-  navigation.js            les 16 rubriques (ordre du sommaire) + barre du bas
+  navigation.js            les 17 rubriques (ordre du sommaire), les 7 fiches
+                           de scénario, et la relation liste → fiche
   data/
     guide.js               contenu rédactionnel du guide, page par page
     nexis.js               365 natures de fait (annexe, pages 32 à 40)
@@ -48,15 +49,19 @@ src/
   assets/logo-ensosp.svg   marque de l'application : volant et flamme
   App.jsx                  thème, routage par ancre, écran de démarrage
   components/
-    Header.jsx             bandeau fixe 60 px : logo, thème, menu
+    Header.jsx             bandeau fixe 60 px : retour, logo, thème, menu
     BottomNav.jsx          barre fixe 70 px : 4 raccourcis + accueil surélevé
-    HamburgerMenu.jsx      panneau des 16 rubriques (70 % de l'écran)
+    HamburgerMenu.jsx      panneau des rubriques, sites indentés (70 % de l'écran)
     SplashScreen.jsx       écran de démarrage, premier lancement seulement
     Logo.jsx
-    pages/                 les 16 écrans
+    pages/
       Accueil, FicheTaches, Horaires, Dotation, Radio,
-      FicheSite + Pavillon / Immeuble / ZoneUrbaine / PME / Saphire,
-      AVP, Plan, Organigramme, Accident, NEXIS, Contacts
+      SitesPage             liste des cinq sites
+      SiteDetail            fiche d'un site, via Pavillon / Immeuble /
+                            ZoneUrbaine / PME / Saphire
+      AVP                   liste des sept scénarios
+      AVPDetail             fiche d'un scénario
+      Plan, Organigramme, Accident, NEXIS, Contacts
   dev/
     Emulator.jsx           cadre iPhone / iPad / Android
     EmulatePage.jsx        page /emulator
@@ -64,6 +69,26 @@ src/
 
 Chaque rubrique porte en pied de page le numéro de page du document source,
 pour retrouver le passage dans le guide papier.
+
+## Navigation
+
+Deux rubriques se consultent en deux temps : **Sites de manœuvre** → la fiche
+d'un site, et **Scénarios AVP** → la fiche d'un scénario. Le bandeau affiche
+alors un bouton « Retour » qui ramène à la liste.
+
+`App.jsx` tient une **pile de navigation** dont le sommet est l'écran affiché.
+Trois règles la gouvernent :
+
+- une fiche ouverte depuis le menu **insère sa liste** dans la pile : depuis le
+  détail du Pavillon, « Retour » ramène aux sites, que l'on soit passé par la
+  liste ou non ;
+- revenir sur un écran déjà dans la pile la **tronque** au lieu de l'allonger,
+  et l'accueil la ramène à sa racine : la pile ne gonfle pas à l'usage ;
+- la pile voyage dans `history.state`, avec **une entrée d'historique par
+  écran**. Le bouton « Retour » de l'application n'est qu'un `history.back()` :
+  il est donc indiscernable du geste de retour d'Android, et un lien pointant
+  droit sur une fiche (`#/immeuble`) reconstruit la pile complète plutôt que de
+  quitter l'application au premier retour.
 
 ## Émulateur intégré
 
